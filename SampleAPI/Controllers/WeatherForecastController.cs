@@ -1,33 +1,73 @@
 using Microsoft.AspNetCore.Mvc;
+using SampleAPI.Models;
+using SampleAPI.Services;
 
 namespace SampleAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase
+    [Route("api/[controller]")]
+    public class BooksController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
+        private readonly BooksService _booksService;
 
-        private readonly ILogger<WeatherForecastController> _logger;
+        public BooksController(BooksService booksService) =>
+            _booksService = booksService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        [HttpGet]
+        public async Task<List<Book>> Get() =>
+            await _booksService.GetAsync();
+
+        [HttpGet("{id:length(24)}")]
+        public async Task<ActionResult<Book>> Get(string id)
         {
-            _logger = logger;
+            var book = await _booksService.GetAsync(id);
+
+            if (book is null)
+            {
+                return NotFound();
+            }
+
+            return book;
         }
 
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        [HttpPost]
+        public async Task<IActionResult> Post(Book newBook)
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            await _booksService.CreateAsync(newBook);
+
+            return CreatedAtAction(nameof(Get), new { id = newBook.Id }, newBook);
+        }
+
+        [HttpPut("{id:length(24)}")]
+        public async Task<IActionResult> Update(string id, Book updatedBook)
+        {
+            var book = await _booksService.GetAsync(id);
+
+            if (book is null)
             {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+                return NotFound();
+            }
+
+            updatedBook.Id = book.Id;
+
+            await _booksService.UpdateAsync(id, updatedBook);
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id:length(24)}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            var book = await _booksService.GetAsync(id);
+
+            if (book is null)
+            {
+                return NotFound();
+            }
+
+            await _booksService.RemoveAsync(id);
+
+            return NoContent();
         }
     }
 }
