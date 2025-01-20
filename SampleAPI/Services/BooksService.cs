@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using SampleAPI.Models;
 namespace SampleAPI.Services
@@ -11,15 +12,15 @@ namespace SampleAPI.Services
             IOptions<BookStoreDatabaseSettings> bookStoreDatabaseSettings)
         {
             var mongoClient = new MongoClient(
-                bookStoreDatabaseSettings.Value.ConnectionStrings);
+                bookStoreDatabaseSettings.Value.ConnectionString);
 
             var mongoDatabase = mongoClient.GetDatabase(
                 bookStoreDatabaseSettings.Value.DatabaseName);
 
             _booksCollection = mongoDatabase.GetCollection<Book>(
                 bookStoreDatabaseSettings.Value.BooksCollectionName);
-        }
 
+        }
         public async Task<List<Book>> GetAsync() =>
             await _booksCollection.Find(_ => true).ToListAsync();
 
@@ -34,5 +35,6 @@ namespace SampleAPI.Services
 
         public async Task RemoveAsync(string id) =>
             await _booksCollection.DeleteOneAsync(x => x.Id == id);
+
     }
 }
